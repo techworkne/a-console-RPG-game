@@ -1,0 +1,150 @@
+@startuml
+
+package "Game Core" {
+  class GameLogic {
+    + Run()
+    + ProcessTurn()
+    + HandlePlayerInput()
+    + HandlePlayerAttack()
+    + IsGameOver()
+    + GetScore()
+  }
+  
+  class GameState {
+    + GetField()
+    + GetPlayer()
+    + IsGameOver()
+    + GetScore()
+  }
+  
+  class GameField {
+    + GetWidth()
+    + GetHeight()
+    + GetCell()
+    + MoveEntity()
+    + PlaceEntity()
+    + RemoveEntity()
+    + GenerateLayout()
+  }
+}
+
+package "Entities" {
+  abstract class Entity {
+    # health_ : int
+    # damage_ : int
+    # x_ : size_t
+    # y_ : size_t
+    + GetHealth()
+    + GetDamage()
+    + GetX()
+    + GetY()
+    + SetX()
+    + SetY()
+    + {abstract} GetType()
+    + IsAlive()
+    + TakeDamage()
+  }
+  
+  class Player {
+    + IsDead()
+    + GetCombatMode()
+    + SwitchCombatMode()
+    + GetScore()
+    + AddScore()
+    + GetLives()
+    + LoseLife()
+    + IsStunned()
+    + Stun()
+    + UnStun()
+    + GetCurrentDamage()
+  }
+  
+  class Enemy {
+    + GetType()
+  }
+  
+  class EnemyBuilding {
+    + GetType()
+    + Update()
+  }
+}
+
+package "Field" {
+  class FieldCell {
+    + GetType()
+    + GetEntity()
+    + SetType()
+    + SetEntity()
+    + IsEmpty()
+    + IsPassable()
+    + ExtractEntity()
+  }
+  
+  enum FieldCellType {
+    kNormal
+    kImpassable
+    kSlowdown
+  }
+}
+
+package "Input/Render" {
+  class InputHandler {
+    + GetCommand()
+    + GetAttackDirection()
+  }
+  
+  class Renderer {
+    + Render()
+    + RenderGameStats()
+    + RenderControls()
+    + RenderGameOver()
+  }
+}
+
+package "Enums" {
+  enum EntityType {
+    kEmpty
+    kPlayer
+    kEnemy
+    kBuilding
+  }
+  
+  enum Direction {
+    kUp
+    kDown
+    kLeft
+    kRight
+  }
+  
+  enum CombatMode {
+    kMelee
+    kRanged
+  }
+}
+
+' Основные связи
+GameLogic --> GameState
+GameLogic --> Renderer
+GameLogic --> InputHandler
+GameState --> GameField
+GameState --> Player
+GameField --> FieldCell
+FieldCell --> Entity
+FieldCell --> FieldCellType
+
+' Наследование
+Entity <|-- Player
+Entity <|-- Enemy
+Entity <|-- EnemyBuilding
+
+' Использование перечислений
+Player --> CombatMode
+InputHandler --> Direction
+Entity --> EntityType
+
+' Агрегации и композиции
+GameState *-- GameField
+GameField *-- FieldCell
+FieldCell o-- Entity
+
+@enduml
