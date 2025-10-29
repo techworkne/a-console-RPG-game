@@ -1,4 +1,4 @@
-@startuml
+@startuml RPG-GAme
 
 package "Game Core" {
   class GameLogic {
