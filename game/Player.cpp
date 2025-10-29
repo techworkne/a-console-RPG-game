@@ -1,7 +1,7 @@
 #include "Player.hpp"
-
-Player::Player(int initial_health, int melee_damage, size_t x, size_t y)
-  : Entity(initial_health, melee_damage, x, y),
+#define BASE_DAMAGE 20
+Player::Player(int initial_health, size_t x, size_t y)
+  : Entity(initial_health, BASE_DAMAGE, x, y),
     combat_mode_(CombatMode::kMelee),
     score_(0),
     lives_(3),
@@ -99,9 +99,7 @@ bool Player::castSpell(size_t spell_index) {
 }
 
 void Player::addSpellToHand(std::unique_ptr<Spell> spell){
-  if(hand_.addSpell(std::move(spell))){
-    std::cout << "spell was added\n";
-  }else{
+  if(!hand_.addSpell(std::move(spell))){
     std::cout << "not enough place in the hand!\n";
   }
 }

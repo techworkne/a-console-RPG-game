@@ -10,6 +10,7 @@
 
 GameLogic::GameLogic(size_t field_width, size_t field_height)
     : game_state_(field_width, field_height) {
+    movement_system_ = std::make_unique<MovementEntity>(game_state_.GetField());
     InitializeGame();
 }
 
@@ -41,6 +42,7 @@ void GameLogic::Run() {
         if (player && player->IsAlive() && player->IsStunned()) {
             std::cout << "Player is stunned~\n";
             std::cout << "PRESS ENTER TO CONTINUE!\n";
+            ProcessTurn();
             std::string input;
             std::getline(std::cin, input);
             player->UnStun();
@@ -157,56 +159,41 @@ void GameLogic::HandlePlayerInput(Direction direction) {
         return;
     }
 
-    size_t current_x = player->GetX();
-    size_t current_y = player->GetY();
-    size_t new_x = current_x;
-    size_t new_y = current_y;
-
-    switch (direction) {
-        case Direction::kUp:    new_y--; break;
-        case Direction::kDown:  new_y++; break;
-        case Direction::kLeft:  new_x--; break;
-        case Direction::kRight: new_x++; break;
-    }
-
-    GameField* field = game_state_.GetField();
-    FieldCell* target_cell = field->GetCell(new_x, new_y);
-    
-    if (!target_cell) {
-        std::cout << "Cannot move - out of bounds!\n";
-        return;
-    }
-
-    if (!target_cell->IsPassable()) {
-        std::cout << "Cannot move - blocked!\n";
-        return;
-    }
-
-    if (target_cell->IsEmpty()) {
-        if (field->MoveEntity(current_x, current_y, new_x, new_y)) {
-            std::cout << "Moved to (" << new_x << ", " << new_y << ")\n";
-            
-            if (target_cell->GetType() == FieldCellType::kSlowdown) {
-                player->Stun();
-                std::cout << "Slowed! Skipping next turn.\n";
-            }
-        }
+     if (movement_system_->MovePlayer(player, direction)) {
+        std::cout << "Moved to (" << player->GetX() << ", " << player->GetY() << ")\n";
     } else {
-        Entity* target_entity = target_cell->GetEntity();
-        if (target_entity) {
-            switch (target_entity->GetType()) {
-                case EntityType::kEnemy:
-                    std::cout << "Attacking enemy!\n";
-                    HandleCombat(player, dynamic_cast<Enemy*>(target_entity));
-                    break;
-                case EntityType::kBuilding:
-                    std::cout << "Attacking building!\n";
-                    HandleCombat(player, dynamic_cast<EnemyBuilding*>(target_entity));
-                    break;
-                default:
-                    std::cout << "Cannot move there!\n";
-                    break;
+        size_t current_x = player->GetX();
+        size_t current_y = player->GetY();
+        size_t target_x = current_x;
+        size_t target_y = current_y;
+
+        switch (direction) {
+            case Direction::kUp:    target_y--; break;
+            case Direction::kDown:  target_y++; break;
+            case Direction::kLeft:  target_x--; break;
+            case Direction::kRight: target_x++; break;
+        }
+
+         FieldCell* target_cell = game_state_.GetField()->GetCell(target_x, target_y);
+        if (target_cell && !target_cell->IsEmpty()) {
+            Entity* target_entity = target_cell->GetEntity();
+            if (target_entity) {
+                switch (target_entity->GetType()) {
+                    case EntityType::kEnemy:
+                        std::cout << "Attacking enemy!\n";
+                        HandleCombat(player, dynamic_cast<Enemy*>(target_entity));
+                        break;
+                    case EntityType::kBuilding:
+                        std::cout << "Attacking building!\n";
+                        HandleCombat(player, dynamic_cast<EnemyBuilding*>(target_entity));
+                        break;
+                    default:
+                        std::cout << "Cannot move there!\n";
+                        break;
+                }
             }
+        } else {
+            std::cout << "Cannot move there!\n";
         }
     }
 }
@@ -264,7 +251,7 @@ void GameLogic::HandlePlayerAttack() {
                 std::cout << target_entity->getEntityTypeName(target_entity->GetType())<< " HP: " << target_entity->GetHealth() << "\n";
 
                 if (!target_entity->IsAlive()) {
-                    RewardSystem::GiveDestructionReward(target_entity, player);
+                    RewardSystem::GiveDestructionReward(target_entity->GetType(), player);
                     field->RemoveEntity(target_entity->GetX(), target_entity->GetY());
                 }
                 
@@ -373,7 +360,7 @@ void GameLogic::HandleCombat(Player* player, EnemyBuilding* building) {
     std::cout << "Building HP: " << building->GetHealth() << "\n";
 
     if (!building->IsAlive()) {
-        RewardSystem::GiveDestructionReward(building, player);
+        RewardSystem::GiveDestructionReward(building->GetType(), player);
         game_state_.GetField()->RemoveEntity(building->GetX(), building->GetY());
     }
 }
@@ -394,7 +381,7 @@ void GameLogic::HandlePlayerDeath() {
             
             field->RemoveEntity(player->GetX(), player->GetY());
             
-            auto new_player = std::make_unique<Player>(100, 20, respawn_x, respawn_y);
+            auto new_player = std::make_unique<Player>(100, respawn_x, respawn_y);
             new_player->SetScore(current_score);
             new_player->SetLives(current_lives);
             new_player->SetDead(false);
@@ -424,74 +411,25 @@ void GameLogic::UpdateEnemies() {
     Player* player = game_state_.GetPlayer();
     if (!field || !player) return;
 
-    std::vector<std::pair<size_t, size_t>> enemy_positions;
-    
+    std::vector<Enemy*> enemies;
     for (size_t y = 0; y < field->GetHeight(); ++y) {
         for (size_t x = 0; x < field->GetWidth(); ++x) {
             FieldCell* cell = field->GetCell(x, y);
             if (cell && !cell->IsEmpty()) {
                 Entity* entity = cell->GetEntity();
                 if (entity && entity->GetType() == EntityType::kEnemy && entity->IsAlive()) {
-                    enemy_positions.emplace_back(x, y);
+                    Enemy* enemy = dynamic_cast<Enemy*>(entity);
+                    if (enemy) {
+                        enemies.push_back(enemy);
+                    }
                 }
             }
         }
     }
-
-    for (auto [x, y] : enemy_positions) {
-        FieldCell* cell = field->GetCell(x, y);
-        if (!cell || cell->IsEmpty()) continue;
-
-        Entity* entity = cell->GetEntity();
-        if (!entity || entity->GetType() != EntityType::kEnemy || !entity->IsAlive()) continue;
-
-        Enemy* enemy = dynamic_cast<Enemy*>(entity);
-        if (!enemy || !player->IsAlive()) continue;
-
-        int dx = player->GetX() - x;
-        int dy = player->GetY() - y;
-
-        size_t new_x = x;
-        size_t new_y = y;
-        
-        if (std::abs(dx) > std::abs(dy)) {
-            new_x += (dx > 0) ? 1 : -1;
-        } else {
-            new_y += (dy > 0) ? 1 : -1;
-        }
-
-        FieldCell* target_cell = field->GetCell(new_x, new_y);
-
-        if (target_cell && target_cell->IsPassable()) {
-            if (target_cell->IsEmpty()) {
-                if (field->MoveEntity(x, y, new_x, new_y)) {
-                    if (target_cell->GetType() == FieldCellType::kTrap) {
-                            HandleTrapActivation(target_cell, enemy);
-                    }
-                    // std::cout << "Enemy moved to (" << new_x << ", " << new_y << ")\n";
-                }
-            } else if (target_cell->GetEntity() && target_cell->GetEntity()->GetType() == EntityType::kPlayer) {
-                std::cout << "Enemy attacks player!\n";
-                HandleCombat(player, enemy);
-            }
-        }
-        else {
-            
-            std::vector<std::pair<size_t, size_t>> moves = {{x+1,y}, {x-1,y}, {x,y+1}, {x,y-1}};
-            for (auto [new_x, new_y] : moves) {
-                FieldCell* cell = field->GetCell(new_x, new_y);
-                if (cell && cell->IsPassable() && cell->IsEmpty()) {
-
-                    if (field->MoveEntity(x, y, new_x, new_y)) {
-                        FieldCell* new_cell = field->GetCell(new_x, new_y);
-                        if (new_cell->GetType() == FieldCellType::kTrap) {
-                            HandleTrapActivation(new_cell, enemy);
-                        }
-                        // std::cout << "Enemy detoured to (" << new_x << ", " << new_y << ")\n";
-                        break;
-                    }
-                }
-            }
+    
+    for (Enemy* enemy : enemies) {
+        if (player->IsAlive()) {
+            movement_system_->MoveEnemyTowardsPlayer(enemy, player);
         }
     }
 }
@@ -553,26 +491,6 @@ void GameLogic::UpdateBuildings() {
     }
 }
 
-void GameLogic::HandleTrapActivation(FieldCell* cell, Entity* victim) {
-    if (!cell || !victim) return;
-    
-    int trap_damage = cell->GetTrapDamage();
-    
-    victim->TakeDamage(trap_damage);
-    std::cout << "Trap activated! ";
-    std::cout << victim->getEntityTypeName(victim->GetType()) << " takes " << trap_damage << " damage!\n";
-    
-    cell->RemoveTrap();
-    std::cout << "Trap disappeared.\n";
-    cell->SetType(FieldCellType::kNormal);
-    
-    if (!victim->IsAlive()) {
-        Player* player = game_state_.GetPlayer();
-        RewardSystem::GiveDestructionReward(victim, player);
-        game_state_.GetField()->RemoveEntity(victim->GetX(), victim->GetY());
-    }
-}
-
 bool GameLogic::CheckPathClear(size_t from_x, size_t from_y, size_t to_x, size_t to_y) const {
     const GameField* field = game_state_.GetField() ;
     if (!field) return false;
@@ -624,7 +542,7 @@ void GameLogic::InitializeGame() {
     GameField* field = game_state_.GetField();
     
     if (FindValidSpawnPosition(start_x, start_y, 1, 3)) {
-        auto player_entity = std::make_unique<Player>(100, 20, start_x, start_y);
+        auto player_entity = std::make_unique<Player>(100, start_x, start_y);
         Player* player_ptr = player_entity.get();
         player_ptr->SetDead(false);
         

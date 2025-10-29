@@ -17,8 +17,6 @@ public:
     
     int getManaCost() const override { return mana_cost_; }
     std::string getName() const override { return "Direct Damage"; }
-    void enhance() override { enhanced_ = true; }
-    bool isEnhanced() const override { return enhanced_; }
 };
 
 #endif

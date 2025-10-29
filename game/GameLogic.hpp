@@ -5,6 +5,7 @@
 #include "Render.hpp"
 #include "GameField.hpp"
 #include "InputHandler.hpp"
+#include "MovementEntity.hpp" 
 #include "Player.hpp"
 #include "Enemy.hpp"
 #include "EnemyBuilding.hpp"
@@ -28,6 +29,7 @@ private:
     GameState game_state_;
     Renderer renderer_;
     InputHandler input_handler_;
+    std::unique_ptr<MovementEntity> movement_system_;
 
     void InitializeGame();
     void HandleCombat(Player* player, Enemy* enemy);
@@ -39,7 +41,6 @@ private:
     bool CheckPathClear(size_t from_x, size_t from_y, size_t to_x, size_t to_y) const;
     bool FindValidSpawnPosition(size_t& x, size_t& y, size_t min_y, size_t max_y);
     void HandleSpellSelection();
-    void HandleTrapActivation(FieldCell* cell, Entity* victim);
 };
 
 #endif

@@ -11,8 +11,9 @@
 
 class RewardSystem {
 public:
-    static void GiveDestructionReward(Entity* destroyed_entity, Player* player);
+    static void GiveDestructionReward(EntityType entity_type, Player* player);
     static void GiveNewSpellReward(Player* player);
     static std::unique_ptr<Spell> CreateSpell(const std::string& name);
+    static const std::string GetEntityTypeName(EntityType type);
 };
 #endif

@@ -99,7 +99,6 @@ bool GameField::MoveEntity(size_t from_x, size_t from_y, size_t to_x, size_t to_
   return true;
 }
 
-
 void GameField::PlaceEntity(size_t x, size_t y, std::unique_ptr<Entity> entity) {
   if (IsValidCoordinates(x, y) && entity) { 
     FieldCell* cell = &cells_[y][x];
@@ -120,71 +119,65 @@ std::unique_ptr<Entity> GameField::RemoveEntity(size_t x, size_t y) {
 }
 
 void GameField::GenerateLayout() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 100);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0, 100);
 
-    for (size_t y = 0; y < height_; ++y) {
-        for (size_t x = 0; x < width_; ++x) {
-            cells_[y][x].SetType(FieldCellType::kNormal);
-        }
-    }
-
-    
-    for (size_t y = 1; y < height_ - 1; ++y) {
-        for (size_t x = 1; x < width_ - 1; ++x) {
-          
-            if (x >= width_/2 - 2 && x <= width_/2 + 2 && 
-                y >= height_/2 - 2 && y <= height_/2 + 2) {
-                continue;
-            }
-
-            int chance = dis(gen);
-            if (chance < 15) {
-                cells_[y][x].SetType(FieldCellType::kImpassable);
-            } else if (chance < 20) {
-                cells_[y][x].SetType(FieldCellType::kSlowdown);
-            }
-        }
-    }
-
-    
+  for (size_t y = 0; y < height_; ++y) {
     for (size_t x = 0; x < width_; ++x) {
-        cells_[0][x].SetType(FieldCellType::kImpassable);
-        cells_[height_ - 1][x].SetType(FieldCellType::kImpassable);
+      cells_[y][x].SetType(FieldCellType::kNormal);
     }
-    for (size_t y = 0; y < height_; ++y) {
-        cells_[y][0].SetType(FieldCellType::kImpassable);
-        cells_[y][width_ - 1].SetType(FieldCellType::kImpassable);
+  }
+
+
+  for (size_t y = 1; y < height_ - 1; ++y) {
+    for (size_t x = 1; x < width_ - 1; ++x) {
+      
+      if (x >= width_/2 - 2 && x <= width_/2 + 2 && 
+        y >= height_/2 - 2 && y <= height_/2 + 2) {
+        continue;
+      }
+
+      int chance = dis(gen);
+      if (chance < 15) {
+        cells_[y][x].SetType(FieldCellType::kImpassable);
+      } else if (chance < 20) {
+        cells_[y][x].SetType(FieldCellType::kSlowdown);
+      }
     }
+  }
 
-    
-    for (size_t y = 2; y < height_ - 2; ++y) {
-        for (size_t x = 2; x < width_ - 2; ++x) {
-            if (!cells_[y][x].IsPassable()) continue;
 
-            
-            int blocked_directions = 0;
-            std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
-            
-            for (auto [dx, dy] : directions) {
-                size_t nx = x + dx;
-                size_t ny = y + dy;
-                if (!cells_[ny][nx].IsPassable()) {
-                    blocked_directions++;
-                }
-            }
+  // рамка для поля
+  for (size_t x = 0; x < width_; ++x) {
+    cells_[0][x].SetType(FieldCellType::kImpassable);
+    cells_[height_ - 1][x].SetType(FieldCellType::kImpassable);
+  }
+  for (size_t y = 0; y < height_; ++y) {
+    cells_[y][0].SetType(FieldCellType::kImpassable);
+    cells_[y][width_ - 1].SetType(FieldCellType::kImpassable);
+  }
 
-            if (blocked_directions >= 3) {
-                for (auto [dx, dy] : directions) {
-                    size_t nx = x + dx;
-                    size_t ny = y + dy;
-                    if (!cells_[ny][nx].IsPassable()) {
-                        cells_[ny][nx].SetType(FieldCellType::kNormal);
-                        break;
-                    }
-                }
-            }
+
+  for (size_t y = 1; y < height_ - 1; ++y) {
+    for (size_t x = 1; x < width_ - 1; ++x) {
+      if (cells_[y][x].GetType() != FieldCellType::kImpassable) continue;
+
+      int passable_neighbors = 0;
+      std::vector<std::pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+  
+      for (auto [dx, dy] : directions) {
+        size_t nx = x + dx;
+        size_t ny = y + dy;
+        if (cells_[ny][nx].IsPassable()) {
+          passable_neighbors++;
         }
+      }
+
+      if (passable_neighbors < 3) {
+        cells_[y][x].SetType(FieldCellType::kNormal);
+      }
+
     }
+  }
 }

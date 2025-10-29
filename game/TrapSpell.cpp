@@ -2,7 +2,7 @@
 #include "RewardSystem.hpp"
 #include "GameField.hpp"
 
-TrapSpell::TrapSpell(int damage, int mana_cost): trap_damage_(damage), mana_cost_(mana_cost), enhanced_(false) {}
+TrapSpell::TrapSpell(int damage, int mana_cost): trap_damage_(damage), mana_cost_(mana_cost) {}
 
 bool TrapSpell::cast(GameField& field, Entity* caster, size_t target_x, size_t target_y) {
     if (!caster || caster->GetType() != EntityType::kPlayer) {

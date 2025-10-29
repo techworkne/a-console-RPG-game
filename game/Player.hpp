@@ -11,7 +11,7 @@
 class Player final : public Entity {
   public:
 
-  Player(int initial_health, int melee_damage, size_t x, size_t y);
+  Player(int initial_health, size_t x, size_t y);
 
   void TakeDamage(int damage) override;
 
@@ -69,7 +69,7 @@ class Player final : public Entity {
 
   private:
     CombatMode combat_mode_;
-    int melee_damage_ = 30;    
+    int melee_damage_ = 50;    
     int ranged_damage_ = 20;
     int melee_range_ = 1;
     int ranged_range_ = 3;

@@ -19,13 +19,8 @@ class Spell {
         virtual int getManaCost() const = 0;
         virtual std::string getName() const = 0;
         
-        // улучшенрия
-        virtual void enhance() = 0;
-        virtual bool isEnhanced() const = 0;
-        
         protected:
         int mana_cost_;
-        bool enhanced_;
         
 
 };

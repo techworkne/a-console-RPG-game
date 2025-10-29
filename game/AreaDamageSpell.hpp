@@ -16,8 +16,6 @@ public:
     bool cast(GameField& field, Entity* caster, size_t target_x, size_t target_y) override;
     int getManaCost() const override { return mana_cost_; }
     std::string getName() const override { return "Area Damage"; }
-    void enhance() override { enhanced_ = true; }
-    bool isEnhanced() const override { return enhanced_; }
 };
 
 #endif

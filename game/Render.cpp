@@ -38,11 +38,7 @@ void Renderer::RenderSpells(const Player* player) const {
     for (size_t i = 0; i < hand.getSpellCount(); ++i) {
         const Spell* spell = hand.getSpell(i);
         if (spell) {
-            std::cout << (i + 1) << ": " << spell->getName() 
-                      << "(" << spell->getManaCost() << " mana)";
-            if (spell->isEnhanced()) {
-                std::cout << "*";
-            }
+            std::cout << (i + 1) << ": " << spell->getName() << "(" << spell->getManaCost() << " mana)";
             if (i < hand.getSpellCount() - 1) {
                 std::cout << " ";
             }

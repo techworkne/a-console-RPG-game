@@ -1,20 +1,19 @@
 #include "AreaDamageSpell.hpp"
 #include "RewardSystem.hpp"
 #include "GameField.hpp"
+#define AREA_SIZE 2
 
 
-AreaDamageSpell::AreaDamageSpell(int damage, int mana_cost): damage_(damage), mana_cost_(mana_cost), enhanced_(false){};
+AreaDamageSpell::AreaDamageSpell(int damage, int mana_cost): damage_(damage), mana_cost_(mana_cost){};
 
 bool AreaDamageSpell::cast(GameField& field, Entity* caster, size_t target_x, size_t target_y) {
     
     
-    int area_size = enhanced_ ? 3 : 2;
-    
-    std::cout << "Casting area damage spell! Area: " << area_size << "x" << area_size << "\n";
+    std::cout << "Casting area damage spell! Area: " << AREA_SIZE << "x" << AREA_SIZE << "\n";
     
     
-    for (int offset_y = 0; offset_y < area_size; ++offset_y) {
-        for (int offset_x = 0; offset_x < area_size; ++offset_x) {
+    for (int offset_y = 0; offset_y < AREA_SIZE; ++offset_y) {
+        for (int offset_x = 0; offset_x < AREA_SIZE; ++offset_x) {
             size_t current_x = target_x + offset_x;
             size_t current_y = target_y + offset_y;
             
@@ -27,7 +26,7 @@ bool AreaDamageSpell::cast(GameField& field, Entity* caster, size_t target_x, si
             if (!cell || cell->IsEmpty()) continue;
             
             Entity* entity = cell->GetEntity();
-            if (entity && (entity->GetType() == EntityType::kEnemy || entity->GetType() == EntityType::kBuilding || entity->GetType() == EntityType::kTower)) {
+            if (entity && (entity->GetType() != EntityType::kPlayer || entity->GetType() != EntityType::kEmpty)) {
                             
                 entity->TakeDamage(damage_);
                 std::cout << "Hit " << entity->getEntityTypeName(entity->GetType()) << " at (" << current_x << ", " << current_y  << ") for " << damage_ << " damage!\n";
@@ -35,10 +34,10 @@ bool AreaDamageSpell::cast(GameField& field, Entity* caster, size_t target_x, si
                 
                 if (!entity->IsAlive()) {
                     Player* player = dynamic_cast<Player*>(caster);
-                    RewardSystem::GiveDestructionReward(entity, player);
+                    RewardSystem::GiveDestructionReward(entity->GetType(), player);
                     field.RemoveEntity(current_x, current_y);
                 }
-            }
+            }else std::cout << "There is no target o.o\n";
         }
     }
     return true;
