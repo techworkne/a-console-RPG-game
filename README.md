@@ -1,4 +1,4 @@
-# Выживание
+  # Выживание
 
 **Текстово-консольная RPG в мире постапокалипсиса.**
 
@@ -25,8 +25,5 @@
 git clone https://github.com/techworkne/a-console-RPG-game.git
 cd a-console-RPG-game
 
-# 2. Скомпилируйте проект
-g++ -std=c++17 *.cpp -o wasteland_blade
-
-# 3. Запустите игру
-./wasteland_blade
+# 2. Скомпилируйте проект и запустите игру
+make run
