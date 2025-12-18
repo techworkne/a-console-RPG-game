@@ -1,0 +1,23 @@
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra
+TARGET = game.exe
+
+SOURCES = main.cpp GameLogic.cpp GameState.cpp GameSerialize.cpp InputHandler.cpp Render.cpp RewardSystem.cpp MovementEntity.cpp \
+          GameField.cpp FieldCell.cpp Entity.cpp Player.cpp Enemy.cpp EnemyBuilding.cpp EnemyArchitecture.cpp EnemyTower.cpp \
+          Spell.cpp DirectDamageSpell.cpp AreaDamageSpell.cpp TrapSpell.cpp PlayerHand.cpp \
+          InputConfig.cpp CommandUtils.cpp
+
+HEADERS = GameLogic.hpp GameState.hpp GameSerialize.hpp InputHandler.hpp Render.hpp GameField.hpp RewardSystem.hpp MovementEntity.hpp \
+          FieldCell.hpp Entity.hpp Player.hpp Enemy.hpp EnemyBuilding.hpp EnemyArchitecture.hpp EnemyTower.hpp \
+          EntityType.hpp FieldCellType.hpp CombatMode.hpp Direction.hpp Command.hpp \
+          Spell.hpp DirectDamageSpell.hpp AreaDamageSpell.hpp TrapSpell.hpp PlayerHand.hpp \
+          GameManager.hpp GameView.hpp InputProvider.hpp InputConfig.hpp CommandUtils.hpp
+
+$(TARGET): $(SOURCES) $(HEADERS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCES)
+
+clean:
+	rm -f $(TARGET)
+
+run: $(TARGET)
+	./$(TARGET)
